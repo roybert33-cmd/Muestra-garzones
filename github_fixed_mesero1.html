@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mesero 1 - Con Vibración</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#f6f6f6;color:#111;padding:16px;max-width:600px;margin:0 auto}
+h2{font-size:28px;font-weight:900}
+.sub{color:#888;font-size:13px;margin:4px 0 12px}
+.alert-bar{display:none;background:#111;color:#fff;border-radius:14px;padding:12px;text-align:center;font-weight:800;font-size:13px;margin-bottom:12px;animation:pulse 0.8s infinite}
+@keyframes pulse{50%{opacity:.7}}
+.top-actions{display:flex;gap:8px;margin-bottom:14px}
+.btn-activar{background:#22c55e;color:#fff;border:0;border-radius:12px;padding:10px 14px;font-weight:800;font-size:12px;flex:1}
+.btn-silenciar{background:#fff;border:1px solid #ddd;border-radius:12px;padding:10px 14px;font-weight:700;font-size:12px}
+.mesa{background:#fff;padding:14px;border-radius:18px;margin-bottom:10px;border:1px solid #e5e5e5;border-left:6px solid #ddd;display:flex;justify-content:space-between;align-items:center;transition:transform .15s}
+.mesa.Pidiendo{border-left-color:#f59e0b}
+.mesa.En\ camino{border-left-color:#3b82f6}
+.mesa.Listo{border-left-color:#ef4444;animation:blink 1s infinite;background:#fff5f5}
+@keyframes blink{50%{background:#ffe4e4}}
+.info b{font-size:14px}
+.info span{font-size:13px;color:#666}
+.btn{padding:9px 14px;border:0;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer}
+.btn.ok{background:#111;color:#fff}
+.btn.green{background:#22c55e;color:#fff}
+.btn.gray{background:#eee}
+.new{transform:scale(1.02);box-shadow:0 8px 20px rgba(0,0,0,.15)}
+</style>
+</head>
+<body>
+
+<!-- PROTECCION PIN -->
+<style>
+#pin-lock { position:fixed; inset:0; z-index:99999; background:#111; display:flex; align-items:center; justify-content:center; flex-direction:column; color:white; font-family:sans-serif; }
+#pin-lock input { font-size:2rem; text-align:center; letter-spacing:0.5rem; padding:12px; border-radius:12px; border:2px solid #f59e0b; width:200px; margin:16px 0; }
+#pin-lock button { background:#f59e0b; border:none; padding:12px 32px; border-radius:12px; font-weight:bold; font-size:1.1rem; cursor:pointer; }
+#pin-error { color:#ff6b6b; height:20px; margin-top:8px; }
+</style>
+<div id="pin-lock">
+  <h2 style="margin:0">🔒 Acceso restringido</h2>
+  <p style="opacity:0.7">Ingresa el PIN del personal</p>
+  <input id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autofocus>
+  <button onclick="checkPin()">Entrar</button>
+  <div id="pin-error"></div>
+</div>
+<script>
+const CORRECT_PIN = "1784";
+function checkPin(){
+  const v = document.getElementById('pin-input').value;
+  if(v === CORRECT_PIN){
+    localStorage.setItem('rest_auth', CORRECT_PIN);
+    document.getElementById('pin-lock').style.display='none';
+  } else {
+    document.getElementById('pin-error').textContent='PIN incorrecto';
+    document.getElementById('pin-input').value='';
+  }
+}
+(function(){
+  if(localStorage.getItem('rest_auth') === CORRECT_PIN){
+    const el = document.getElementById('pin-lock');
+    if(el) el.style.display='none';
+  }
+})();
+document.getElementById('pin-input').addEventListener('keyup', e => { if(e.key==='Enter') checkPin(); });
+</script>
+<!-- FIN PROTECCION PIN -->
+
+<h2>🧑‍💼 MESERO 1</h2>
+<div class="sub">Mesas 1-4 • Vibración activa</div>
+
+<div class="top-actions">
+  <button class="btn-activar" id="btnVib" onclick="activarVib()">🔔 Activar vibración</button>
+  <button class="btn-silenciar" onclick="silenciar()">🔕 Silenciar 5 min</button>
+</div>
+
+<div id="alerta" class="alert-bar"></div>
+<div id="panel"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const cfg={apiKey:"AIzaSyBfNhMXyx6mFTm6NBZX2IUqlYENHjukphc",authDomain:"restaurant-app-bccfa.firebaseapp.com",projectId:"restaurant-app-bccfa",storageBucket:"restaurant-app-bccfa.firebasestorage.app",messagingSenderId:"125055311821",appId:"1:125055311821:web:ffbb0cea9c5bc54ebeee84"};
+const app=initializeApp(cfg);const db=getFirestore(app);
+
+let vibracionActiva = false;
+let silenciadoHasta = 0;
+let estadosAnteriores = {}; // para detectar cambios
+
+function mostrarAlerta(txt){
+  const el=document.getElementById('alerta');
+  el.innerText=txt; el.style.display='block';
+  setTimeout(()=>el.style.display='none',4000);
+}
+
+window.activarVib = async()=>{
+  vibracionActiva = true;
+  // truco: necesita interacción del usuario para permitir vibrar
+  if("vibrate" in navigator){ navigator.vibrate(50); }
+  document.getElementById('btnVib').innerText="✅ Vibración ON";
+  document.getElementById('btnVib').style.background="#111";
+  mostrarAlerta("🔔 Vibración activada");
+  // pedir permiso de notificación opcional
+  if("Notification" in window && Notification.permission==="default"){
+    try{ await Notification.requestPermission(); }catch(e){}
+  }
+};
+
+window.silenciar=()=>{
+  silenciadoHasta = Date.now() + 5*60*1000;
+  mostrarAlerta("🔕 Silenciado 5 minutos");
+};
+
+function vibrar(tipo, mesaNum, plato){
+  if(!vibracionActiva) return;
+  if(Date.now() < silenciadoHasta) return;
+  if(!("vibrate" in navigator)) return;
+
+  if(tipo==="PIDIENDO"){
+    // Doble vibración corta = nueva orden
+    navigator.vibrate([200,100,200,100,200]);
+    mostrarAlerta(`🔔 NUEVO PEDIDO MESA ${mesaNum}: ${plato}`);
+    if(Notification.permission==="granted"){
+      new Notification(`Nuevo pedido Mesa ${mesaNum}`, {body: plato});
+    }
+  }
+  if(tipo==="LISTO"){
+    // Vibración larga = cocina listo
+    navigator.vibrate([500,200,500]);
+    mostrarAlerta(`✅ MESA ${mesaNum} LISTA PARA ENTREGAR`);
+    if(Notification.permission==="granted"){
+      new Notification(`Mesa ${mesaNum} lista`, {body: plato});
+    }
+  }
+}
+
+window.accion=async(id,est,rein=false)=>{const data={estado:est};if(rein)data.pedidoActual="";await updateDoc(doc(db,"mesas",id),data)};
+
+onSnapshot(query(collection(db,"mesas"),where("numero","in",[1,2,3,4])),snap=>{
+  let h="";
+  snap.forEach(d=>{
+    const m=d.data();
+    const id=d.id;
+    const prev = estadosAnteriores[id];
+
+    // DETECTAR CAMBIOS PARA VIBRAR
+    if(prev){
+      if(prev.estado!==m.estado){
+        if(m.estado==="Pidiendo"){
+          vibrar("PIDIENDO", m.numero, m.pedidoActual);
+        }
+        if(m.estado==="Listo"){
+          vibrar("LISTO", m.numero, m.pedidoActual);
+        }
+      }
+    }
+    estadosAnteriores[id]= {...m};
+
+    const emoji = m.pedidoActual?.includes("Pizza")?"🍕":m.pedidoActual?.includes("Hamburguesa")?"🍔":m.pedidoActual?.includes("Tacos")?"🌮":m.pedidoActual?.includes("Ensalada")?"🥗":m.pedidoActual?"🥤":"";
+    const esNuevo = m.estado==="Pidiendo" || m.estado==="Listo";
+    h+=`<div class="mesa ${m.estado} ${esNuevo?'new':''}">
+      <div class="info"><b>MESA ${m.numero}</b><br><span>${emoji} ${m.pedidoActual||'Libre'} • ${m.estado}</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${m.estado==='Pidiendo'?`<button class="btn ok" onclick="accion('${id}','En camino')">Aceptar</button>`:''}
+        ${m.estado==='Listo'?`<button class="btn green" onclick="accion('${id}','Entregado')">Entregado</button>`:''}
+        ${m.estado==='Entregado'?`<button class="btn gray" onclick="accion('${id}','Libre',true)">Reiniciar</button>`:''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('panel').innerHTML=h || '<div style="color:#999;text-align:center;margin-top:30px">No hay pedidos</div>';
+});
+</script>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;var a=target.closest?target.closest("a[href]"):null;if(!a||!a.href||!/^https?:\/\//.test(a.href))return;if(a.href.replace(/#.*$/,"")===loc)return;if(parent===window)return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*")},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script><script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;var a=target.closest?target.closest("a[href]"):null;if(!a||!a.href||!/^https?:\/\//.test(a.href))return;if(a.href.replace(/#.*$/,"")===loc)return;if(parent===window)return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*")},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
+</html>
