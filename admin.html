@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Reparto</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; text-align: center; }
+        button { padding: 20px; font-size: 18px; cursor: pointer; background: #c9a86a; border: none; border-radius: 10px; }
+        .log { margin-top: 20px; text-align: left; max-width: 400px; margin-inline: auto; background: #eee; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Panel de Control</h1>
+    <p>Haz clic para repartir las 20 mesas entre los meseros activos.</p>
+    <button onclick="repartir()">🔄 REPARTIR MESAS AHORA</button>
+    <div class="log" id="log"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = { /* TU CONFIG AQUÍ */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.repartir = async () => {
+            const meseros = ["Juan", "Pedro", "Maria", "Ana"];
+            const mesasSnap = await getDocs(collection(db, "mesas"));
+            const mesas = mesasSnap.docs;
+
+            let logHtml = "";
+            for(let i=0; i < mesas.length; i++) {
+                const meseroAsignado = meseros[i % meseros.length];
+                const mesaRef = doc(db, "mesas", mesas[i].id);
+                
+                await updateDoc(mesaRef, { 
+                    meseroId: meseroAsignado,
+                    numero: i + 1 
+                });
+                logHtml += `Mesa ${i+1} -> ${meseroAsignado}<br>`;
+            }
+            document.getElementById('log').innerHTML = logHtml;
+            alert("Reparto completado");
+        };
+    </script>
+</body>
+</html>
